@@ -1,0 +1,563 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyNoticeable</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        notion: {
+                            bg: '#FFFFFF',
+                            sidebar: '#F7F6F3',
+                            hover: '#EFECE6',
+                            border: '#E9E9E7',
+                            text: '#37352F',
+                            muted: '#787774',
+                            accent: '#2EAADC',
+                            badge: '#F1F1EF'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['ui-sans-serif', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom scrollbar matching Notion */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D3D1CB;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #AEAC9E;
+        }
+    </style>
+</head>
+<body class="bg-notion-bg text-notion-text font-sans antialiased h-full flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Mobile Header -->
+    <div class="md:hidden flex items-center justify-between p-4 border-b border-notion-border bg-notion-sidebar">
+        <div class="flex items-center gap-2 font-semibold text-sm">
+            <i data-lucide="book-open" class="w-4 h-4 text-notion-muted"></i>
+            <span>StudyNoticeable</span>
+        </div>
+        <button id="toggle-sidebar" class="p-1 rounded hover:bg-notion-hover text-notion-muted">
+            <i data-lucide="panel-left" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-80 bg-notion-sidebar border-r border-notion-border flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out md:static md:inset-auto h-full overflow-y-auto">
+        
+        <!-- Sidebar Header -->
+        <div class="p-4 border-b border-notion-border flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded bg-notion-text text-white flex items-center justify-center font-bold text-xs">
+                    SN
+                </div>
+                <span class="font-semibold text-sm tracking-tight">Workspace de Estudos</span>
+            </div>
+            <span class="text-xs px-2 py-0.5 bg-notion-badge text-notion-muted rounded border border-notion-border font-mono">v1.0</span>
+        </div>
+
+        <!-- Sidebar Widgets Container -->
+        <div class="p-4 space-y-6 flex-1">
+
+            <!-- WIDGET 1: Digital Clock -->
+            <div class="bg-white p-4 rounded-lg border border-notion-border shadow-sm">
+                <div class="flex items-center gap-2 text-xs font-semibold text-notion-muted uppercase tracking-wider mb-2">
+                    <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                    <span>Relógio Digital</span>
+                </div>
+                <div id="clock-time" class="text-3xl font-mono font-bold tracking-tight text-notion-text">
+                    00:00:00
+                </div>
+                <div id="clock-date" class="text-xs text-notion-muted mt-1 font-medium capitalize">
+                    Carregando data...
+                </div>
+            </div>
+
+            <!-- WIDGET 2: Pomodoro Timer -->
+            <div class="bg-white p-4 rounded-lg border border-notion-border shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-notion-muted uppercase tracking-wider">
+                        <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                        <span>Pomodoro</span>
+                    </div>
+                    <span id="pomo-mode-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-notion-badge text-notion-text border border-notion-border font-medium">Foco</span>
+                </div>
+
+                <!-- Timer Display -->
+                <div class="text-center py-2">
+                    <div id="pomo-display" class="text-4xl font-mono font-bold tracking-tight text-notion-text">
+                        25:00
+                    </div>
+                </div>
+
+                <!-- Mode Controls -->
+                <div class="grid grid-cols-3 gap-1 my-3 text-xs">
+                    <button id="mode-work" class="py-1 rounded bg-notion-hover font-medium text-notion-text border border-notion-border">Foco</button>
+                    <button id="mode-short" class="py-1 rounded hover:bg-notion-hover font-medium text-notion-muted transition-colors">Pausa</button>
+                    <button id="mode-long" class="py-1 rounded hover:bg-notion-hover font-medium text-notion-muted transition-colors">Longa</button>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex gap-2">
+                    <button id="pomo-start" class="flex-1 py-1.5 bg-notion-text text-white rounded text-xs font-medium hover:bg-black transition-colors flex items-center justify-center gap-1">
+                        <i data-lucide="play" class="w-3 h-3"></i>
+                        <span>Iniciar</span>
+                    </button>
+                    <button id="pomo-reset" class="px-3 py-1.5 border border-notion-border rounded text-xs font-medium text-notion-muted hover:bg-notion-hover transition-colors">
+                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- WIDGET 3: Calendar Widget -->
+            <div class="bg-white p-4 rounded-lg border border-notion-border shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-notion-muted uppercase tracking-wider">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                        <span id="calendar-month-year">Mês Ano</span>
+                    </div>
+                    <div class="flex gap-1">
+                        <button id="cal-prev" class="p-1 hover:bg-notion-hover rounded text-notion-muted"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>
+                        <button id="cal-next" class="p-1 hover:bg-notion-hover rounded text-notion-muted"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-notion-muted mb-1">
+                    <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                </div>
+                <div id="calendar-days" class="grid grid-cols-7 gap-1 text-center text-xs">
+                    <!-- Days inserted via JS -->
+                </div>
+            </div>
+
+            <!-- Quick Navigation Link List -->
+            <div class="space-y-1 text-xs text-notion-muted pt-2 border-t border-notion-border">
+                <a href="#abnt" class="flex items-center gap-2 p-1.5 rounded hover:bg-notion-hover hover:text-notion-text transition-colors">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                    <span>1. Normas da ABNT</span>
+                </a>
+                <a href="#leitura" class="flex items-center gap-2 p-1.5 rounded hover:bg-notion-hover hover:text-notion-text transition-colors">
+                    <i data-lucide="book-open-check" class="w-3.5 h-3.5"></i>
+                    <span>2. Leitura Acadêmica</span>
+                </a>
+                <a href="#resumo" class="flex items-center gap-2 p-1.5 rounded hover:bg-notion-hover hover:text-notion-text transition-colors">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                    <span>3. Resumo Funcional</span>
+                </a>
+            </div>
+
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-3 border-t border-notion-border text-[11px] text-notion-muted text-center">
+            Minimalist Academic Hub
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto h-full bg-notion-bg">
+        
+        <!-- Cover Banner (Notion Minimalist Style) -->
+        <div class="h-32 bg-gradient-to-r from-neutral-100 via-stone-100 to-neutral-200 border-b border-notion-border relative">
+            <div class="absolute -bottom-5 left-8 md:left-16 bg-white p-2 rounded-lg border border-notion-border shadow-sm">
+                <i data-lucide="graduation-cap" class="w-8 h-8 text-notion-text"></i>
+            </div>
+        </div>
+
+        <div class="max-w-3xl mx-auto px-6 md:px-12 pt-10 pb-20">
+            
+            <!-- Main Title Header -->
+            <div class="mb-10">
+                <h1 class="text-4xl font-bold tracking-tight text-notion-text mb-2">StudyNoticeable</h1>
+                <p class="text-notion-muted text-sm font-medium">Guia Prático de Metodologia, Leitura Acadêmica e Síntese de Conteúdo.</p>
+                <div class="flex items-center gap-4 text-xs text-notion-muted mt-4 pb-4 border-b border-notion-border">
+                    <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> Produção Acadêmica</span>
+                    <span class="flex items-center gap-1"><i data-lucide="clock-3" class="w-3.5 h-3.5"></i> Leitura de 8 min</span>
+                    <span class="flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Reviso ABNT 2024</span>
+                </div>
+            </div>
+
+            <!-- Callout Box: Overview -->
+            <div class="p-4 rounded-lg bg-notion-sidebar border border-notion-border mb-10 flex gap-3 items-start">
+                <i data-lucide="info" class="w-5 h-5 text-notion-muted flex-shrink-0 mt-0.5"></i>
+                <div class="text-xs text-notion-text leading-relaxed">
+                    <strong>Objetivo do Guia:</strong> Este repositório foi projetado para fornecer diretrizes concisas e estruturadas sobre a normatização científica, estratégias de leitura analítica e a confecção de resumos de alto rendimento para estudantes e pesquisadores.
+                </div>
+            </div>
+
+            <!-- ARTICLE 1: NORMAS DA ABNT -->
+            <section id="abnt" class="mb-12 scroll-mt-6">
+                <div class="flex items-center gap-2 text-xl font-bold mb-4 pb-2 border-b border-notion-border text-notion-text">
+                    <i data-lucide="file-text" class="w-5 h-5 text-notion-muted"></i>
+                    <h2>1. Diretrizes Essenciais das Normas ABNT</h2>
+                </div>
+
+                <p class="text-sm leading-relaxed text-notion-text mb-4">
+                    A Associação Brasileira de Normas Técnicas (ABNT) estabelece a padronização gráfica e estrutural dos trabalhos acadêmicos no Brasil. O cumprimento estrito destas diretrizes garante legibilidade, uniformidade e rigor científico às produções de graduação e pós-graduação.
+                </p>
+
+                <div class="space-y-4 my-6">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-notion-muted">Formatação Gráfica Geral</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="p-3 rounded border border-notion-border bg-white">
+                            <span class="font-semibold block mb-1">Margens e Papel</span>
+                            <span class="text-notion-muted">A4 (branca). Superior e Esquerda: 3 cm. Inferior e Direita: 2 cm.</span>
+                        </div>
+                        <div class="p-3 rounded border border-notion-border bg-white">
+                            <span class="font-semibold block mb-1">Fonte e Tamanho</span>
+                            <span class="text-notion-muted">ARIAL ou TIMES NEW ROMAN. Corpo do texto tamanho 12; citações longas e notas tamanho 10.</span>
+                        </div>
+                        <div class="p-3 rounded border border-notion-border bg-white">
+                            <span class="font-semibold block mb-1">Espaçamento</span>
+                            <span class="text-notion-muted">1,5 no corpo do texto. Espaçamento simples (1,0) para citações longas, notas de rodapé e referências.</span>
+                        </div>
+                        <div class="p-3 rounded border border-notion-border bg-white">
+                            <span class="font-semibold block mb-1">Parágrafos e Alinhamento</span>
+                            <span class="text-notion-muted">Texto justificado. Recuo de 1,25 cm na primeira linha de cada parágrafo.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-notion-muted mb-3">Regras de Citação (NBR 10520)</h3>
+                <ul class="list-disc pl-5 space-y-2 text-xs text-notion-text leading-relaxed mb-4">
+                    <li><strong>Citação Direta Curta (até 3 linhas):</strong> Deve ser incorporada ao parágrafo entre aspas duplas. Exemplo: Segundo Silva (2020, p. 15), "a leitura científica demanda análise metódica".</li>
+                    <li><strong>Citação Direta Longa (mais de 3 linhas):</strong> Deve ser destacada em bloco próprio, com recuo de 4 cm da margem esquerda, fonte tamanho 10, espaçamento simples e sem aspas.</li>
+                    <li><strong>Citação Indireta:</strong> Paráfrase das ideias do autor. Requer menção ao sobrenome e ano de publicação (a página é opcional, mas recomendada).</li>
+                </ul>
+
+                <div class="bg-notion-sidebar p-3 rounded border border-notion-border font-mono text-xs text-notion-text">
+                    <span class="text-notion-muted block mb-1">// Exemplo de Referência Bibliográfica (NBR 6023)</span>
+                    SOBRENOME, Nome. <strong>Título do Livro: subtítulo</strong>. Edição. Local de publicação: Editora, ano.
+                </div>
+            </section>
+
+            <!-- ARTICLE 2: LEITURA ACADÊMICA -->
+            <section id="leitura" class="mb-12 scroll-mt-6">
+                <div class="flex items-center gap-2 text-xl font-bold mb-4 pb-2 border-b border-notion-border text-notion-text">
+                    <i data-lucide="book-open-check" class="w-5 h-5 text-notion-muted"></i>
+                    <h2>2. Estratégias de Leitura Acadêmica Eficiente</h2>
+                </div>
+
+                <p class="text-sm leading-relaxed text-notion-text mb-4">
+                    A leitura acadêmica difere substancialmente da leitura de entretenimento. Trata-se de um processo ativo, crítico e orientado a objetivos, cujo foco é a extração de conceitos, teses centrais e a identificação do rigor metodológico adotado pelo autor.
+                </p>
+
+                <div class="space-y-3 my-6">
+                    <!-- Step 1 -->
+                    <div class="p-3 rounded border border-notion-border bg-white flex gap-3">
+                        <div class="font-mono text-xs font-bold px-2 py-1 bg-notion-badge rounded h-fit">01</div>
+                        <div>
+                            <h4 class="text-xs font-semibold text-notion-text">Previsão e Leitura Inspecional (Skimming)</h4>
+                            <p class="text-xs text-notion-muted mt-0.5">Analise o título, resumo, introdução, conclusões e os subtítulos antes de ler o texto completo. Compreenda o panorama geral e a tese defendida antes de aprofundar.</p>
+                        </div>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="p-3 rounded border border-notion-border bg-white flex gap-3">
+                        <div class="font-mono text-xs font-bold px-2 py-1 bg-notion-badge rounded h-fit">02</div>
+                        <div>
+                            <h4 class="text-xs font-semibold text-notion-text">Leitura Analítica e Questionamento Ativo</h4>
+                            <p class="text-xs text-notion-muted mt-0.5">Leia fazendo perguntas ao texto: <em>Qual o problema formulado pelo autor? Quais são as evidências oferecidas? Quais as lacunas do argumento?</em></p>
+                        </div>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="p-3 rounded border border-notion-border bg-white flex gap-3">
+                        <div class="font-mono text-xs font-bold px-2 py-1 bg-notion-badge rounded h-fit">03</div>
+                        <div>
+                            <h4 class="text-xs font-semibold text-notion-text">Sintopicalidade e Diálogo Teórico</h4>
+                            <p class="text-xs text-notion-muted mt-0.5">Relacione a obra com outros autores estudados. Avalie se o texto confirma, contradiz ou expande o conhecimento previamente adquirido sobre a temática.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ARTICLE 3: RESUMO FUNCIONAL -->
+            <section id="resumo" class="mb-12 scroll-mt-6">
+                <div class="flex items-center gap-2 text-xl font-bold mb-4 pb-2 border-b border-notion-border text-notion-text">
+                    <i data-lucide="edit-3" class="w-5 h-5 text-notion-muted"></i>
+                    <h2>3. Como Criar um Resumo Funcional</h2>
+                </div>
+
+                <p class="text-sm leading-relaxed text-notion-text mb-4">
+                    Um resumo funcional não é uma mera coleção de frases copiadas do texto original. Trata-se de uma reconstrução condensada da arquitetura lógica do autor, preservando as ideias essenciais e eliminando redundâncias e dados secundários.
+                </p>
+
+                <!-- Process Steps -->
+                <div class="border border-notion-border rounded-lg bg-white overflow-hidden my-6">
+                    <div class="bg-notion-sidebar p-3 border-b border-notion-border font-semibold text-xs text-notion-text">
+                        Metodologia de Redução em 4 Passos
+                    </div>
+                    <div class="p-4 space-y-4 text-xs">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-notion-muted mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <strong>1. Identificação do Núcleo Argumentativo:</strong> Isole a Tese Principal, os Argumentos de Suporte e a Conclusão. Tudo o que for exemplo circunstancial deve ser descartado.
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-notion-muted mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <strong>2. Parafraseamento Consciente:</strong> Reescreva as ideias utilizando seu próprio vocabulário acadêmico. Isso garante a assimilação real do conceito e evita plágio não intencional.
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-notion-muted mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <strong>3. Hierarquização Tópica:</strong> Utilização de bullet points, tópicos encadeados e negritos estratégicos para criar escaneabilidade.
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-notion-muted mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <strong>4. Validação por Rastreabilidade:</strong> Mantenha sempre a referência precisa de onde cada argumento foi extraído (ex: [p. 45-48]) para consultas futuras rápidas.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="overflow-x-auto my-6">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-notion-sidebar border-b border-notion-border">
+                                <th class="p-2.5 font-semibold">Resumo Passivo (Ineficiente)</th>
+                                <th class="p-2.5 font-semibold">Resumo Funcional (Ativo)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-notion-border">
+                            <tr>
+                                <td class="p-2.5 text-notion-muted">Cópia literal de trechos grifados.</td>
+                                <td class="p-2.5 font-medium text-notion-text">Sintetização em palavras próprias.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 text-notion-muted">Acúmulo de detalhes e exemplos longos.</td>
+                                <td class="p-2.5 font-medium text-notion-text">Foco exclusivo nas premissas e conclusões.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 text-notion-muted">Texto corrido sem estrutura visual.</td>
+                                <td class="p-2.5 font-medium text-notion-text">Tópicos hierarquizados e de fácil revisão.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Footer note -->
+            <div class="pt-8 border-t border-notion-border text-center text-xs text-notion-muted">
+                StudyNoticeable &bull; Documento Acadêmico Organizado &bull; 2026
+            </div>
+
+        </div>
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // -------------------------------------------------------------
+        // 1. Sidebar Toggle (Mobile Responsiveness)
+        // -------------------------------------------------------------
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar');
+        const sidebar = document.getElementById('sidebar');
+
+        if (toggleSidebarBtn && sidebar) {
+            toggleSidebarBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+            });
+        }
+
+        // -------------------------------------------------------------
+        // 2. Digital Clock Widget
+        // -------------------------------------------------------------
+        function updateClock() {
+            const now = new Date();
+            
+            // Time formatting
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock-time').textContent = `${hours}:${minutes}:${seconds}`;
+
+            // Date formatting
+            const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('pt-BR', options);
+            document.getElementById('clock-date').textContent = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // -------------------------------------------------------------
+        // 3. Pomodoro Timer Widget
+        // -------------------------------------------------------------
+        let pomoMinutes = 25;
+        let pomoSeconds = 0;
+        let pomoTimer = null;
+        let isRunning = false;
+        let currentMode = 'work'; // 'work', 'short', 'long'
+
+        const pomoDisplay = document.getElementById('pomo-display');
+        const pomoStartBtn = document.getElementById('pomo-start');
+        const pomoResetBtn = document.getElementById('pomo-reset');
+        const modeBadge = document.getElementById('pomo-mode-badge');
+
+        const btnWork = document.getElementById('mode-work');
+        const btnShort = document.getElementById('mode-short');
+        const btnLong = document.getElementById('mode-long');
+
+        function updatePomoDisplay() {
+            const m = String(pomoMinutes).padStart(2, '0');
+            const s = String(pomoSeconds).padStart(2, '0');
+            pomoDisplay.textContent = `${m}:${s}`;
+        }
+
+        function setMode(mode, mins, badgeText) {
+            pausePomodoro();
+            currentMode = mode;
+            pomoMinutes = mins;
+            pomoSeconds = 0;
+            modeBadge.textContent = badgeText;
+            updatePomoDisplay();
+
+            // Style active mode buttons
+            [btnWork, btnShort, btnLong].forEach(btn => {
+                btn.className = "py-1 rounded hover:bg-notion-hover font-medium text-notion-muted transition-colors";
+            });
+
+            if (mode === 'work') btnWork.className = "py-1 rounded bg-notion-hover font-medium text-notion-text border border-notion-border";
+            if (mode === 'short') btnShort.className = "py-1 rounded bg-notion-hover font-medium text-notion-text border border-notion-border";
+            if (mode === 'long') btnLong.className = "py-1 rounded bg-notion-hover font-medium text-notion-text border border-notion-border";
+        }
+
+        function startPomodoro() {
+            if (isRunning) return;
+            isRunning = true;
+            pomoStartBtn.innerHTML = `<i data-lucide="pause" class="w-3 h-3"></i><span>Pausar</span>`;
+            lucide.createIcons();
+
+            pomoTimer = setInterval(() => {
+                if (pomoSeconds === 0) {
+                    if (pomoMinutes === 0) {
+                        clearInterval(pomoTimer);
+                        isRunning = false;
+                        alert('Tempo concluído!');
+                        resetPomodoro();
+                        return;
+                    }
+                    pomoMinutes--;
+                    pomoSeconds = 59;
+                } else {
+                    pomoSeconds--;
+                }
+                updatePomoDisplay();
+            }, 1000);
+        }
+
+        function pausePomodoro() {
+            clearInterval(pomoTimer);
+            isRunning = false;
+            pomoStartBtn.innerHTML = `<i data-lucide="play" class="w-3 h-3"></i><span>Iniciar</span>`;
+            lucide.createIcons();
+        }
+
+        function resetPomodoro() {
+            pausePomodoro();
+            if (currentMode === 'work') pomoMinutes = 25;
+            if (currentMode === 'short') pomoMinutes = 5;
+            if (currentMode === 'long') pomoMinutes = 15;
+            pomoSeconds = 0;
+            updatePomoDisplay();
+        }
+
+        pomoStartBtn.addEventListener('click', () => {
+            if (isRunning) pausePomodoro();
+            else startPomodoro();
+        });
+
+        pomoResetBtn.addEventListener('click', resetPomodoro);
+        btnWork.addEventListener('click', () => setMode('work', 25, 'Foco'));
+        btnShort.addEventListener('click', () => setMode('short', 5, 'Pausa'));
+        btnLong.addEventListener('click', () => setMode('long', 15, 'Longa'));
+
+        // -------------------------------------------------------------
+        // 4. Interactive Calendar Widget
+        // -------------------------------------------------------------
+        let currentCalDate = new Date();
+
+        function renderCalendar() {
+            const monthYearElem = document.getElementById('calendar-month-year');
+            const daysContainer = document.getElementById('calendar-days');
+            daysContainer.innerHTML = '';
+
+            const year = currentCalDate.getFullYear();
+            const month = currentCalDate.getMonth();
+
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            monthYearElem.textContent = `${monthNames[month]} ${year}`;
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            const today = new Date();
+
+            // Blank spaces before month start
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyDiv = document.createElement('div');
+                daysContainer.appendChild(emptyDiv);
+            }
+
+            // Fill days of the month
+            for (let day = 1; day <= lastDay; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.textContent = day;
+                dayDiv.className = "py-1 rounded text-notion-text hover:bg-notion-hover cursor-pointer transition-colors";
+
+                // Highlight Today
+                if (
+                    day === today.getDate() &&
+                    month === today.getMonth() &&
+                    year === today.getFullYear()
+                ) {
+                    dayDiv.className = "py-1 rounded bg-notion-text text-white font-bold";
+                }
+
+                daysContainer.appendChild(dayDiv);
+            }
+        }
+
+        document.getElementById('cal-prev').addEventListener('click', () => {
+            currentCalDate.setMonth(currentCalDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        document.getElementById('cal-next').addEventListener('click', () => {
+            currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        renderCalendar();
+    </script>
+</body>
+</html>
+```
